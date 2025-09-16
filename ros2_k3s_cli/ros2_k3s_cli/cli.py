@@ -1,10 +1,24 @@
-"""
-Copyright 2025 Sachin
-Author: Sachin
-License: Apache 2.0
-"""
+# Copyright 2025 Sachin Kumar.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 import sys
+import yaml
+import questionary
+
+from ros2_k3s_core.robot_pod import RobotPod
+from ros2_k3s_core.k3s_manager import K3SManager
 
 class K3SCLI:
     def __init__(self):
@@ -23,9 +37,15 @@ class K3SCLI:
 
         # deploy command
         parser_deploy = subparsers.add_parser('deploy', help='Deploy application to cluster')
-        parser_deploy.add_argument('--app', required=True, help='Application name')
         parser_deploy.add_argument('--config', required=True, help='Path to deployment config file')
         parser_deploy.set_defaults(func=self.deploy)
+
+        # create-config command
+        parser_create_config = subparsers.add_parser('create-config', help='Interactively create a robot pod YAML config')
+        parser_create_config.add_argument('--output', required=True, help='Output YAML file path')
+        parser_create_config.set_defaults(func=self.create_config)
+
+        self.k3s_manager = K3SManager()
 
     def run(self, argv=None):
         args = self.parser.parse_args(argv)
@@ -48,11 +68,52 @@ class K3SCLI:
         return 0
 
     def deploy(self, args):
-        if not args.app or not args.config:
-            print('Error: --app and --config are required for deploy')
+        if not args.config:
+            print('Error: --config is required for deploy')
             return 1
-        print(f'Deploying app {args.app} with config: {args.config}')
-        # TODO: Add actual deployment logic
+        print(f'Deploying with config: {args.config}')
+        try:
+            result = self.k3s_manager.deploy_config(args.config)
+            print('Deployment successful:')
+            # print(result)
+        except Exception as e:
+            print(f'Error during deployment: {e}')
+            return 1
+        return 0
+
+    def create_config(self, args):
+        print('Creating robot pod config...')
+        name = input('Enter name: ')
+        image = input('Enter image: ')
+        command = input('Enter command: ')
+        namespace = input('Enter namespace: ')
+        deployment = questionary.select(
+            'Select deployment:',
+            choices=['edge', 'local']
+        ).ask()
+
+        try:
+            pod = RobotPod(
+                name=name,
+                image=image,
+                command=command,
+                namespace=namespace,
+                deployment=deployment
+            )
+        except Exception as e:
+            print(f'Error: {e}')
+            return 1
+
+        data = {
+            'name': pod.name,
+            'image': pod.image,
+            'command': pod.command,
+            'namespace': pod.namespace,
+            'deployment': pod.deployment
+        }
+        with open(args.output, 'w') as f:
+            yaml.safe_dump(data, f, sort_keys=False)
+        print(f'Config written to {args.output}')
         return 0
 
 def main():

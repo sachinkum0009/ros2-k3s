@@ -1,0 +1,5 @@
+name: ros2-sub6
+image: ghcr.io/sachinkum0009/ros2-k3s:v0.1
+command: "source /opt/ros/humble/setup.bash && ros2 run demo_nodes_cpp listener"
+namespace: ros2-pub-sub
+deployment: mydevice2

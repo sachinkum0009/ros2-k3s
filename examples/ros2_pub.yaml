@@ -1,0 +1,5 @@
+name: ros2-pub4
+image: ghcr.io/sachinkum0009/ros2-k3s:v0.1
+command: "source /opt/ros/humble/setup.bash && ros2 run demo_nodes_cpp talker"
+namespace: ros2-pub-sub
+deployment: edge # or 'local' for running on the local robot

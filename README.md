@@ -21,6 +21,16 @@ source install/setup.bash
 ros2 run ros2_k3s_cli cli --help
 ```
 
+### Generate Robot Pod Config
+
+Interactively create a robot pod YAML config:
+
+```bash
+ros2 run ros2_k3s_cli cli create-config --output robot_pod_generated.yaml
+```
+
+You will be prompted for name, image, command, namespace, and can select deployment (edge/local) using arrow keys.
+
 ### Example Commands
 
 - Initialize cluster:
@@ -31,9 +41,9 @@ ros2 run ros2_k3s_cli cli --help
   ```bash
   ros2 run ros2_k3s_cli cli validate --config cluster.yaml
   ```
-- Deploy application:
+- Apply (deploy) application:
   ```bash
-  ros2 run ros2_k3s_cli cli deploy --app myapp --config deploy.yaml
+  ros2 run ros2_k3s_cli cli deploy --config src/ros2-k3s/examples/ros2_sub.yaml
   ```
 
-Replace `cluster.yaml`, `myapp`, and `deploy.yaml` with your actual configuration and application names.
+Replace `cluster.yaml` and the config path with your actual configuration files.
