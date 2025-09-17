@@ -49,7 +49,6 @@ class K3SCLI:
         parser_create_config.add_argument('--output', required=True, help='Output YAML file path')
         parser_create_config.set_defaults(func=self.create_config)
 
-        self.k3s_manager = K3SManager()
 
     def run(self, argv=None):
         args = self.parser.parse_args(argv)
@@ -115,12 +114,13 @@ class K3SCLI:
         return 0
 
     def deploy(self, args):
+        k3s_manager = K3SManager()
         if not args.config:
             print('Error: --config is required for deploy')
             return 1
         print(f'Deploying with config: {args.config}')
         try:
-            result = self.k3s_manager.deploy_config(args.config)
+            result = k3s_manager.deploy_config(args.config)
             print('Deployment successful:')
             # print(result)
         except Exception as e:
