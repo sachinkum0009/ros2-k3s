@@ -17,6 +17,7 @@ import sys
 import yaml
 import questionary
 import subprocess
+from tabulate import tabulate
 
 from ros2_k3s_core.robot_pod import RobotPod
 from ros2_k3s_core.k3s_manager import K3SManager
@@ -48,6 +49,20 @@ class K3SCLI:
         parser_create_config = subparsers.add_parser('create-config', help='Interactively create a robot pod YAML config')
         parser_create_config.add_argument('--output', required=True, help='Output YAML file path')
         parser_create_config.set_defaults(func=self.create_config)
+
+        # get command
+        parser_get = subparsers.add_parser('get', help='Get cluster resources')
+        get_subparsers = parser_get.add_subparsers(dest='resource', required=False)
+        parser_get.set_defaults(func=self.get_interactive)
+        
+        # get namespace subcommand
+        parser_get_namespace = get_subparsers.add_parser('namespace', help='Get namespaces')
+        parser_get_namespace.set_defaults(func=self.get_namespace)
+        
+        # get pod subcommand
+        parser_get_pod = get_subparsers.add_parser('pod', help='Get pods')
+        parser_get_pod.add_argument('-n', '--namespace', required=True, help='Namespace to get pods from')
+        parser_get_pod.set_defaults(func=self.get_pod)
 
 
     def run(self, argv=None):
@@ -161,6 +176,142 @@ class K3SCLI:
         with open(args.output, 'w') as f:
             yaml.safe_dump(data, f, sort_keys=False)
         print(f'Config written to {args.output}')
+        return 0
+
+    def get_namespace(self, args):
+        """Get and display all namespaces"""
+        try:
+            k3s_manager = K3SManager()
+            namespaces_list = k3s_manager.get_namespaces()
+            
+            namespaces = [
+                [
+                    ns.metadata.name,
+                    ns.status.phase,
+                    ns.metadata.creation_timestamp.strftime('%Y-%m-%d %H:%M:%S') if ns.metadata.creation_timestamp else ""
+                ]
+                for ns in namespaces_list.items
+            ]
+            
+            print(tabulate(namespaces, headers=["Name", "Status", "Age"], tablefmt="grid"))
+            
+        except Exception as e:
+            print(f'Error getting namespaces: {e}')
+            return 1
+        return 0
+
+    def get_pod(self, args):
+        """Get and display pods in specified namespace"""
+        try:
+            k3s_manager = K3SManager()
+            pods_list = k3s_manager.get_pods(args.namespace)
+            
+            pods = [
+                [
+                    pod.metadata.name,
+                    pod.status.phase,
+                    pod.status.pod_ip if pod.status.pod_ip else "",
+                    pod.spec.node_name if pod.spec.node_name else "",
+                ]
+                for pod in pods_list.items
+            ]
+            
+            print(tabulate(pods, headers=["Pod Name", "Status", "Pod IP", "Node"], tablefmt="grid"))
+            
+        except Exception as e:
+            print(f'Error getting pods: {e}')
+            return 1
+        return 0
+
+    def get_interactive(self, args):
+        """Interactive mode for getting cluster resources"""
+        # If a specific resource is requested, delegate to the appropriate method
+        if args.resource == 'namespace':
+            return self.get_namespace(args)
+        elif args.resource == 'pod':
+            return self.get_pod(args)
+        
+        # Interactive mode - no specific resource requested
+        try:
+            k3s_manager = K3SManager()
+            
+            # Step 1: Get and display namespaces for selection
+            print("Fetching namespaces...")
+            namespaces_list = k3s_manager.get_namespaces()
+            
+            if not namespaces_list.items:
+                print("No namespaces found.")
+                return 1
+            
+            # Create choices for namespace selection
+            namespace_choices = [ns.metadata.name for ns in namespaces_list.items]
+            
+            # Let user select a namespace
+            selected_namespace = questionary.select(
+                'Select a namespace:',
+                choices=namespace_choices
+            ).ask()
+            
+            if not selected_namespace:
+                print("No namespace selected.")
+                return 1
+            
+            print(f"\nSelected namespace: {selected_namespace}")
+            
+            # Step 2: Get and display pods in the selected namespace
+            print(f"Fetching pods in namespace '{selected_namespace}'...")
+            pods_list = k3s_manager.get_pods(selected_namespace)
+            
+            if not pods_list.items:
+                print(f"No pods found in namespace '{selected_namespace}'.")
+                return 0
+            
+            # Display pods in table format
+            pods = [
+                [
+                    pod.metadata.name,
+                    pod.status.phase,
+                    pod.status.pod_ip if pod.status.pod_ip else "",
+                    pod.spec.node_name if pod.spec.node_name else "",
+                ]
+                for pod in pods_list.items
+            ]
+            
+            print(f"\nPods in namespace '{selected_namespace}':")
+            print(tabulate(pods, headers=["Pod Name", "Status", "Pod IP", "Node"], tablefmt="grid"))
+            
+            # Step 3: Let user select a pod to view logs
+            pod_choices = [pod.metadata.name for pod in pods_list.items]
+            
+            selected_pod = questionary.select(
+                'Select a pod to view logs:',
+                choices=pod_choices
+            ).ask()
+            
+            if not selected_pod:
+                print("No pod selected.")
+                return 0
+            
+            print(f"\nFetching logs for pod '{selected_pod}' in namespace '{selected_namespace}'...")
+            
+            # Step 4: Get and display logs
+            try:
+                logs = k3s_manager.get_logs(selected_namespace, selected_pod)
+                print(f"\n{'='*60}")
+                print(f"LOGS FOR POD: {selected_pod}")
+                print(f"NAMESPACE: {selected_namespace}")
+                print(f"{'='*60}")
+                print(logs)
+                print(f"{'='*60}")
+                
+            except Exception as log_error:
+                print(f'Error getting logs for pod {selected_pod}: {log_error}')
+                return 1
+            
+        except Exception as e:
+            print(f'Error in interactive mode: {e}')
+            return 1
+        
         return 0
 
 def main():

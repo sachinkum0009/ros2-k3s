@@ -33,6 +33,8 @@ You will be prompted for name, image, command, namespace, and can select deploym
 
 ### Example Commands
 
+#### Cluster Initialization
+
 - Initialize cluster as server:
   ```bash
   ros2 run ros2_k3s_cli cli init --server
@@ -41,6 +43,30 @@ You will be prompted for name, image, command, namespace, and can select deploym
   ```bash
   ros2 run ros2_k3s_cli cli init --agent --token <your-token> --url <server-url>
   ```
+
+#### Cluster Resource Management
+
+- **Interactive mode** - Browse namespaces, pods, and view logs:
+  ```bash
+  ros2 run ros2_k3s_cli cli get
+  ```
+  This will:
+  1. Show all namespaces and let you select one using arrow keys
+  2. Display all pods in the selected namespace in a table format
+  3. Let you select a pod using arrow keys
+  4. Show the logs from the selected pod (last 5 seconds)
+
+- Get all namespaces:
+  ```bash
+  ros2 run ros2_k3s_cli cli get namespace
+  ```
+- Get pods in a specific namespace:
+  ```bash
+  ros2 run ros2_k3s_cli cli get pod -n <namespace>
+  ```
+
+#### Application Deployment
+
 - Validate cluster config:
   ```bash
   ros2 run ros2_k3s_cli cli validate --config cluster.yaml
@@ -50,4 +76,4 @@ You will be prompted for name, image, command, namespace, and can select deploym
   ros2 run ros2_k3s_cli cli deploy --config src/ros2-k3s/examples/ros2_sub.yaml
   ```
 
-Replace `<your-token>`, `cluster.yaml` and the config path with your actual values and configuration files.
+Replace `<your-token>`, `<namespace>`, `cluster.yaml` and the config path with your actual values and configuration files.

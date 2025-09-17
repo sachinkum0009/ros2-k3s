@@ -78,3 +78,20 @@ class K3SManager:
             V1PodList: The list of pods in the specified namespace from the Kubernetes API.
         """
         return self._core_api.list_namespaced_pod(namespace=namespace)
+    
+    def get_logs(self, namespace: str, pod_name: str):
+        """
+        Retrieves the logs of a specific pod in the specified namespace for the last 5 seconds.
+
+        Args:
+            namespace (str): The namespace of the pod.
+            pod_name (str): The name of the pod to retrieve logs from.
+
+        Returns:
+            str: The logs of the specified pod from the last 5 seconds.
+        """
+        return self._core_api.read_namespaced_pod_log(
+            name=pod_name, 
+            namespace=namespace, 
+            since_seconds=5
+        )
