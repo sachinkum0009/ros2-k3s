@@ -33,9 +33,13 @@ You will be prompted for name, image, command, namespace, and can select deploym
 
 ### Example Commands
 
-- Initialize cluster:
+- Initialize cluster as server:
   ```bash
-  ros2 run ros2_k3s_cli cli init --config cluster.yaml
+  ros2 run ros2_k3s_cli cli init --server
+  ```
+- Initialize cluster as agent:
+  ```bash
+  ros2 run ros2_k3s_cli cli init --agent --token <your-token> --url <server-url>
   ```
 - Validate cluster config:
   ```bash
@@ -46,4 +50,4 @@ You will be prompted for name, image, command, namespace, and can select deploym
   ros2 run ros2_k3s_cli cli deploy --config src/ros2-k3s/examples/ros2_sub.yaml
   ```
 
-Replace `cluster.yaml` and the config path with your actual configuration files.
+Replace `<your-token>`, `cluster.yaml` and the config path with your actual values and configuration files.

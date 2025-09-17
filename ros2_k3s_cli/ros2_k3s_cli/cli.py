@@ -16,6 +16,7 @@ import argparse
 import sys
 import yaml
 import questionary
+import subprocess
 
 from ros2_k3s_core.robot_pod import RobotPod
 from ros2_k3s_core.k3s_manager import K3SManager
@@ -27,7 +28,10 @@ class K3SCLI:
 
         # init command
         parser_init = subparsers.add_parser('init', help='Initialize the ROS2 K3S cluster')
-        parser_init.add_argument('--config', required=True, help='Path to cluster config file')
+        parser_init.add_argument('--server', action='store_true', help='Initialize as K3S server')
+        parser_init.add_argument('--agent', action='store_true', help='Initialize as K3S agent')
+        parser_init.add_argument('--token', help='Token for K3S agent (required when using --agent)')
+        parser_init.add_argument('--url', help='K3S server URL for agent (required when using --agent)')
         parser_init.set_defaults(func=self.init)
 
         # validate command
@@ -52,11 +56,54 @@ class K3SCLI:
         return args.func(args)
 
     def init(self, args):
-        if not args.config:
-            print('Error: --config is required for init')
+        # Check if both server and agent are specified
+        if args.server and args.agent:
+            print('Error: Cannot specify both --server and --agent')
             return 1
-        print(f'Initializing cluster with config: {args.config}')
-        # TODO: Add actual initialization logic
+        
+        # Check if neither server nor agent is specified
+        if not args.server and not args.agent:
+            print('Error: Must specify either --server or --agent')
+            return 1
+        
+        if args.server:
+            print('Installing K3S server...')
+            try:
+                # Install K3S server using shell command
+                subprocess.run('curl -sfL https://get.k3s.io | sh -', 
+                             shell=True, check=True)
+                
+                print('K3S server installed successfully')
+                
+                # Set permissions for k3s.yaml
+                print('Setting permissions for k3s.yaml...')
+                subprocess.run(['sudo', 'chmod', '644', '/etc/rancher/k3s/k3s.yaml'], check=True)
+                print('Permissions set successfully')
+                
+            except subprocess.CalledProcessError as e:
+                print(f'Error installing K3S server: {e}')
+                return 1
+        
+        elif args.agent:
+            if not args.token:
+                print('Please find the token')
+                return 1
+            if not args.url:
+                print('Error: --url is required when using --agent')
+                return 1
+            
+            print(f'Installing k3s agent with token and URL: {args.url}')
+            try:
+                # Install K3S agent using shell command with environment variables
+                cmd = f'curl -sfL https://get.k3s.io | K3S_URL={args.url} K3S_TOKEN={args.token} sh -'
+                subprocess.run(cmd, shell=True, check=True)
+                
+                print('K3S agent installed successfully')
+                
+            except subprocess.CalledProcessError as e:
+                print(f'Error installing K3S agent: {e}')
+                return 1
+        
         return 0
 
     def validate(self, args):
