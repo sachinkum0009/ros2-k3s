@@ -95,3 +95,30 @@ class K3SManager:
             namespace=namespace, 
             since_seconds=5
         )
+
+    def get_resource_usage(self, namespace: str, pod_name: str) -> float:
+        """
+        Retrieves the RAM, CPU usage in MB of a specific pod in the specified namespace.
+
+        Args:
+            namespace (str): The namespace of the pod.
+            pod_name (str): The name of the pod to retrieve resource usage from.
+
+        Returns:
+            float: The RAM and CPU usage of the specified pod in MB.
+        """
+        metrics_api = client.CustomObjectsApi()
+        metrics = metrics_api.get_namespaced_custom_object(
+            group="metrics.k8s.io",
+            version="v1beta1",
+            namespace=namespace,
+            plural="pods",
+            name=pod_name
+        )
+        containers = metrics.get("containers", [])
+        if containers:
+            usage = containers[0].get("usage", {})
+            ram_usage = float(usage.get("memory", 0.0).rstrip("Ki")) / 1024  # Convert to MB
+            cpu_usage = float(usage.get("cpu", 0.0).rstrip("n")) / 1e6  # Convert to MB
+            return ram_usage, cpu_usage
+        return 0.0, 0.0 

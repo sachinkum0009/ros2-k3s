@@ -1,6 +1,9 @@
 # ros2-k3s
 Repo for using k3s with ROS2
 
+
+![Dashboard Screenshot](docs/media/dashboard.png)
+
 ## How to Run ros2_k3s_cli
 
 1. Build the workspace:
@@ -77,3 +80,22 @@ You will be prompted for name, image, command, namespace, and can select deploym
   ```
 
 Replace `<your-token>`, `<namespace>`, `cluster.yaml` and the config path with your actual values and configuration files.
+
+## Web Dashboard (ros2_k3s_web)
+
+A modern NiceGUI-based dashboard is now available for cluster monitoring:
+
+- **Cluster Overview**: View namespaces, nodes, and cluster status in a modern UI
+- **Node Status**: See real-time node health (Ready/NotReady/Unknown)
+- **Namespace Browsing**: Click namespaces to view running pods
+- **Pod Details**: See pod status, container readiness, creation time, and assigned node
+- **Resource Monitoring**: View live CPU and RAM usage for ready pods; refresh metrics on demand
+- **Accurate Pod Health**: Pods are only considered healthy if all containers are ready
+- **Visual Feedback**: Color-coded status, warnings for non-ready pods, and error handling
+
+To run the dashboard:
+
+```bash
+ros2 run ros2_k3s_web web_app
+```
+
