@@ -22,7 +22,7 @@ class RobotPod(BaseModel):
     image: str
     command: str
     namespace: str
-    deployment: Literal["edge", "local", "asus-pc", "mydevice2"]
+    deployment: Literal["edge", "local", "asus-pc", "mydevice2", "tb1", "tb2", "tb3"]
 
 
 def load_robot_pod_from_yaml(yaml_path: str) -> RobotPod:
